@@ -3,19 +3,21 @@ import torch.nn.functional as functional
 import matplotlib.pyplot as plt
 from torch.utils.data import DataLoader
 from torch import FloatTensor
-import nn_util
+import networks
 
 
 class RewardModel(torch.nn.Module):
     def __init__(self, n_in, n_out):
         super(RewardModel, self).__init__()
+        n_hidden = 100
 
-        self.layer = nn_util.MaxDenseResNet(n_in, depth=4, n_max=2)
-        self.out = torch.nn.Linear(n_in, n_out)
+        self.inp = torch.nn.Linear(n_in, n_hidden)
+        self.layer = networks.DenseNet([networks.MaxLayer(n_hidden, n_hidden, n_max=3) for _ in range(4)])
+        self.out = torch.nn.Linear(n_hidden, n_out)
 
     def forward(self, obs):
-
-        x = self.layer(obs)
+        x = self.inp(obs)
+        x = self.layer(x)
 
         return self.out(x).sigmoid()
 
@@ -23,7 +25,7 @@ class RewardModel(torch.nn.Module):
 class PolicyModel(torch.nn.Module):
     def __init__(self, n_in, n_out):
         super(PolicyModel, self).__init__()
-        self.lin = nn_util.WeightedAverageLayer(n_in, n_out, 100)
+        self.lin = networks.WeightedAverageLayer(n_in, n_out, 3)
 
     def forward(self, obs):
 
@@ -33,10 +35,10 @@ class PolicyModel(torch.nn.Module):
 
 
 class NextHiddenModel(torch.nn.Module):
-    def __init__(self, n_in, n_out, n_soft=10):
+    def __init__(self, n_in, n_out, n_soft=3):
         super(NextHiddenModel, self).__init__()
 
-        self.layer = nn_util.WeightedAverageLayer(n_in, n_out, n_soft)
+        self.layer = networks.WeightedAverageLayer(n_in, n_out, n_soft)
 
     def forward(self, values):
         hidden, act = values
