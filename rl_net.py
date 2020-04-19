@@ -17,11 +17,9 @@ class ModelAgent(torch.nn.Module):
         self.layer = networks.DenseNet([networks.MaxLayer(n_hidden, n_hidden, n_max=3) for _ in range(4)])
         self.out = torch.nn.Linear(n_hidden, n_reward)
 
-        if cuda:
-            self.cuda()
-
     def forward(self, obs):
-        obs.cuda() if self.is_cuda else None
+        if self.is_cuda:
+            obs = obs.cuda()
 
         x = self.inp(obs)
         x = self.layer(x)
@@ -30,7 +28,8 @@ class ModelAgent(torch.nn.Module):
         return out.sigmoid()
 
     def get_action(self, obs):
-        obs.cuda() if self.is_cuda else None
+        if self.is_cuda:
+            obs = obs.cuda()
 
         rew_grad = self.reward_gradient(obs, torch.FloatTensor().new_tensor([-1, .5]))
         return rew_grad[:, :2].tanh()
@@ -38,13 +37,15 @@ class ModelAgent(torch.nn.Module):
         # return torch.tanh(self.policy(self.hidden(obs)))
 
     def get_reward(self, obs):
-        obs.cuda() if self.is_cuda else None
+        if self.is_cuda:
+            obs = obs.cuda()
 
         return self(obs)
 
     def reward_gradient(self, obs, rewards):
-        obs.cuda() if self.is_cuda else None
-        rewards.cuda() if self.is_cuda else None
+        if self.is_cuda:
+            obs = obs.cuda()
+            rewards = rewards.cuda()
 
         obs.requires_grad_()
         if obs.grad is not None:
@@ -59,11 +60,12 @@ class ModelAgent(torch.nn.Module):
 
     def loss(self, data):
         obs_in, act_in, obs_next_in, reward_time_in, reward_bool_in = data
-        obs_in.cuda() if self.is_cuda else None
-        act_in.cuda() if self.is_cuda else None
-        obs_next_in.cuda() if self.is_cuda else None
-        reward_time_in.cuda() if self.is_cuda else None
-        reward_bool_in.cuda() if self.is_cuda else None
+        if self.is_cuda:
+            obs_in = obs_in.cuda()
+            act_in = act_in.cuda()
+            obs_next_in = obs_next_in.cuda()
+            reward_time_in = reward_time_in.cuda()
+            reward_bool_in = reward_bool_in.cuda()
 
         reward = self.get_reward(obs_in)
 
@@ -73,11 +75,12 @@ class ModelAgent(torch.nn.Module):
 
     def reward_accuracy(self, data):
         obs_in, act_in, obs_next_in, reward_time_in, reward_bool_in = data
-        obs_in.cuda() if self.is_cuda else None
-        act_in.cuda() if self.is_cuda else None
-        obs_next_in.cuda() if self.is_cuda else None
-        reward_time_in.cuda() if self.is_cuda else None
-        reward_bool_in.cuda() if self.is_cuda else None
+        if self.is_cuda:
+            obs_in = obs_in.cuda()
+            act_in = act_in.cuda()
+            obs_next_in = obs_next_in.cuda()
+            reward_time_in = reward_time_in.cuda()
+            reward_bool_in = reward_bool_in.cuda()
 
         pred = self.get_reward(obs_in) > .5
         truth = reward_bool_in.bool()
