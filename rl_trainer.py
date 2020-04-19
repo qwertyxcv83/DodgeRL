@@ -52,7 +52,7 @@ def train(model_agent, train_set, test_set, epochs, print_epochs=1, loss_glider=
             sum_loss = 0
 
     model_agent.eval()
-    evaluate(model_agent, train_loader)
+    evaluate(model_agent, test_loader)
 
 
 def train_single(model, data, opt=None, des_loss=float('inf'), zero_step=True, console=True, max_steps=float('inf')):
