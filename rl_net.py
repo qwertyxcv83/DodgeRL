@@ -27,12 +27,12 @@ class ModelAgent(torch.nn.Module):
 
         return out.sigmoid()
 
-    def get_action_cpu(self, obs):
+    def get_action(self, obs):
         if self.is_cuda:
             obs = obs.cuda()
 
         rew_grad = self.reward_gradient(obs, torch.FloatTensor().new_tensor([-1, .5]))
-        return rew_grad[:, :2].tanh().cpu()
+        return rew_grad[:, :2].tanh()
         # return torch.randn(2)
         # return torch.tanh(self.policy(self.hidden(obs)))
 
