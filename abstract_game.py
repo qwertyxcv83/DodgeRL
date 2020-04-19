@@ -208,7 +208,7 @@ class AbstractGame:
 
         # step, certain events should only be triggered if it's a nn_time_step
         obs = self.observation
-        action = actor.get_action(self.observation, self.user_input, is_nn_time_step)
+        action = actor.get_action_cpu(self.observation, self.user_input, is_nn_time_step)
         self.step_obs(time_elapsed, action, speed, is_nn_time_step)  # should create new obs object
 
         # adding last time step to memory, and advancing game_stamp by 1
@@ -225,7 +225,7 @@ class AbstractGame:
     def draw(self, window, actor, font):
         if actor.is_agent:
             with torch.no_grad():
-                p = actor.agent.get_reward(self.observation)
+                p = actor.agent.get_reward(self.observation).cpu()
             for i in range(p.shape[1]):
                 text_surface = font.render('Reward: {:.4f}'.format(p.numpy()[0, i]), False, (0, 0, 0))
                 window.blit(text_surface, (0, 50*i))
@@ -326,7 +326,7 @@ class ActorNN(Actor):
     def __init__(self, agent, noise=.5, max_speed=1.5):
         super().__init__(True)
         self.agent = agent
-        self.noise = .5#
+        self.noise = .5
         self.max_speed = max_speed
         self.act = torch.FloatTensor().new_zeros((1, agent.n_act))
 
@@ -334,7 +334,7 @@ class ActorNN(Actor):
         if nn_step:
             # with # torch.no_grad():
             noise_normal = torch.randn(1, self.agent.n_act)
-            act = self.agent.get_action(observation).cpu()
+            act = self.agent.get_action_cpu(observation)
 
             self.act = act * (1 + self.noise * noise_normal) * self.max_speed
 

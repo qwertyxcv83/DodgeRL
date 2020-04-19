@@ -33,11 +33,15 @@ def sample_game(actorNN, time_sec, overwrite=True, console=True):
 # 60 secs = 1000 datapoints
 def create_data(actorNN, secs=30, times=1, max_size=float('inf'), overwrite=True, console=True, console_sample=True):
     rewards = sample_game(actorNN, secs, overwrite=overwrite, console=console_sample)
-    for _ in range(times - 1):
+    n = 0
+    for i in range(times - 1):
         rewards += sample_game(actorNN, secs, overwrite=False, console=console_sample)
+        if console and i > float(times-1)/10 * (n+1):
+            n += 1
+            print("{:.1f} ... ".format(float(i) / (times-1) * 100))
 
     if console:
-        print("sampling done, gathered {} rewards per minute".format(rewards * 60 / secs / times))
+        print("\nsampling done, gathered {} rewards per minute".format(rewards * 60 / secs / times))
 
     data_set = load_data(max_size=max_size, console=console)
     return data_set, rewards

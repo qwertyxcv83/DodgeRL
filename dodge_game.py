@@ -83,7 +83,7 @@ class DodgeGame(AbstractGame):
             playerx, playery, disth, distv, righty, lefty, downx, upx, presentx, presenty = self.decode_obs(
                 self.observation)
             act = torch.FloatTensor().new_zeros(1, 2)
-            grad = actor.agent.reward_gradient(self.observation, torch.FloatTensor().new_tensor([-1, .5]))
+            grad = actor.agent.reward_gradient(self.observation, torch.FloatTensor().new_tensor([-1, .5])).cpu()
             grad_fac = .1
 
             obs_shadow = self.observation + grad * grad_fac

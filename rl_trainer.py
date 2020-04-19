@@ -15,7 +15,7 @@ def train(model_agent, train_set, test_set, epochs, print_epochs=1, loss_glider=
 
         mean_loss = 0.
         for i, data in enumerate(test_loader):
-            mean_loss = (model_agent.loss(data) + mean_loss * i) / (i+1)
+            mean_loss = (model_agent.loss(data).cpu() + mean_loss * i) / (i+1)
 
     des_loss = (mean_loss + .01) * 2
     opt.lr = .01  # min(.01 / mean_loss, .1)
@@ -83,7 +83,7 @@ def evaluate(model, train_loader):
 
     mean_loss = 0.
     for i, data in enumerate(train_loader):
-        correct_one, total_one, correct_zero, total_zero = model.reward_accuracy(data)
+        correct_one, total_one, correct_zero, total_zero = model.reward_accuracy(data).cpu()
         if i == 0:
             sum_c1 = correct_one
             sum_t1 = total_one
@@ -94,7 +94,7 @@ def evaluate(model, train_loader):
             sum_t1 += total_one
             sum_c0 += correct_zero
             sum_t0 += total_zero
-        mean_loss = (mean_loss * i + model.loss(data)) / (i + 1)
+        mean_loss = (mean_loss * i + model.loss(data).cpu()) / (i + 1)
     print()
     for i in range(sum_c1.shape[0]):
         print("total: {:.3f} %, ones: {:.3f} %, zeros: {:.3f} %, dataset_split: {:.3f} %".format(
