@@ -208,7 +208,7 @@ class AbstractGame:
 
         # step, certain events should only be triggered if it's a nn_time_step
         obs = self.observation
-        action = actor.get_action_cpu(self.observation, self.user_input, is_nn_time_step)
+        action = actor.get_action(self.observation, self.user_input, is_nn_time_step)
         self.step_obs(time_elapsed, action, speed, is_nn_time_step)  # should create new obs object
 
         # adding last time step to memory, and advancing game_stamp by 1
