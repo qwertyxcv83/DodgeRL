@@ -10,18 +10,21 @@ def train(model_agent, train_set, test_set, epochs, print_epochs=1, loss_glider=
 
     opt = torch.optim.SGD(model_agent.parameters(), lr=.01)
 
+    print("warm-up ", end='')
     with torch.no_grad():
         model_agent.eval()
 
         mean_loss = 0.
         for i, data in enumerate(test_loader):
             mean_loss = (model_agent.loss(data).cpu() + mean_loss * i) / (i+1)
+    print("finished")
 
     des_loss = (mean_loss + .01) * 2
     opt.lr = .01  # min(.01 / mean_loss, .1)
     gliding_loss = mean_loss
     gliding_step = float(optimal_step)
 
+    model_agent.train()
     sum_steps = 0.
     sum_loss = 0.
     for epoch in range(1, epochs+1):
@@ -48,6 +51,7 @@ def train(model_agent, train_set, test_set, epochs, print_epochs=1, loss_glider=
             sum_steps = 0
             sum_loss = 0
 
+    model_agent.eval()
     evaluate(model_agent, train_loader)
 
 

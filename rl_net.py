@@ -74,20 +74,21 @@ class ModelAgent(torch.nn.Module):
         return loss
 
     def reward_accuracy(self, data):
-        obs_in, act_in, obs_next_in, reward_time_in, reward_bool_in = data
-        if self.is_cuda:
-            obs_in = obs_in.cuda()
-            act_in = act_in.cuda()
-            obs_next_in = obs_next_in.cuda()
-            reward_time_in = reward_time_in.cuda()
-            reward_bool_in = reward_bool_in.cuda()
+        with torch.no_grad():
+            obs_in, act_in, obs_next_in, reward_time_in, reward_bool_in = data
+            if self.is_cuda:
+                obs_in = obs_in.cuda()
+                act_in = act_in.cuda()
+                obs_next_in = obs_next_in.cuda()
+                reward_time_in = reward_time_in.cuda()
+                reward_bool_in = reward_bool_in.cuda()
 
-        pred = self.get_reward(obs_in) > .5
-        truth = reward_bool_in.bool()
+            pred = self.get_reward(obs_in) > .5
+            truth = reward_bool_in.bool()
 
-        correct_one = (pred & truth).sum(dim=0).cpu()
-        total_one = truth.sum(dim=0).cpu()
-        correct_zero = (~pred & ~truth).sum(dim=0).cpu()
-        total_zero = (~truth).sum(dim=0).cpu()
+            correct_one = (pred & truth).sum(dim=0).cpu()
+            total_one = truth.sum(dim=0).cpu()
+            correct_zero = (~pred & ~truth).sum(dim=0).cpu()
+            total_zero = (~truth).sum(dim=0).cpu()
 
-        return correct_one, total_one, correct_zero, total_zero
+            return correct_one, total_one, correct_zero, total_zero
