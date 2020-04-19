@@ -18,7 +18,7 @@ class ModelAgent(torch.nn.Module):
         self.out = torch.nn.Linear(n_hidden, n_reward)
 
         if cuda:
-            self.is_cuda()
+            self.cuda()
 
     def forward(self, obs):
         obs.cuda() if self.is_cuda else None
