@@ -83,7 +83,7 @@ def evaluate(model, train_loader):
 
     mean_loss = 0.
     for i, data in enumerate(train_loader):
-        correct_one, total_one, correct_zero, total_zero = model.reward_accuracy(data).cpu()
+        correct_one, total_one, correct_zero, total_zero = model.reward_accuracy(data)
         if i == 0:
             sum_c1 = correct_one
             sum_t1 = total_one

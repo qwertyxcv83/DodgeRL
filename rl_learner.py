@@ -34,6 +34,10 @@ def sample_game(actorNN, time_sec, overwrite=True, console=True):
 def create_data(actorNN, secs=30, times=1, max_size=float('inf'), overwrite=True, console=True, console_sample=True):
     rewards = sample_game(actorNN, secs, overwrite=overwrite, console=console_sample)
     n = 0
+
+    if console:
+        print("playing: ", end='')
+
     for i in range(times - 1):
         rewards += sample_game(actorNN, secs, overwrite=False, console=console_sample)
         if console and i > float(times-1)/10 * (n+1):

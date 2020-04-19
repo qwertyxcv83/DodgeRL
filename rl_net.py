@@ -85,9 +85,9 @@ class ModelAgent(torch.nn.Module):
         pred = self.get_reward(obs_in) > .5
         truth = reward_bool_in.bool()
 
-        correct_one = (pred & truth).sum(dim=0)
-        total_one = truth.sum(dim=0)
-        correct_zero = (~pred & ~truth).sum(dim=0)
-        total_zero = (~truth).sum(dim=0)
+        correct_one = (pred & truth).sum(dim=0).cpu()
+        total_one = truth.sum(dim=0).cpu()
+        correct_zero = (~pred & ~truth).sum(dim=0).cpu()
+        total_zero = (~truth).sum(dim=0).cpu()
 
         return correct_one, total_one, correct_zero, total_zero
