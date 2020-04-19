@@ -38,7 +38,7 @@ def create_data(actorNN, secs=30, times=1, max_size=float('inf'), overwrite=True
         rewards += sample_game(actorNN, secs, overwrite=False, console=console_sample)
         if console and i > float(times-1)/10 * (n+1):
             n += 1
-            print("{:.1f} ... ".format(float(i) / (times-1) * 100))
+            print("{:.1f} % ... ".format(float(i) / (times-1) * 100), end='')
 
     if console:
         print("\nsampling done, gathered {} rewards per minute".format(rewards * 60 / secs / times))
