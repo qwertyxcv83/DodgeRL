@@ -334,7 +334,7 @@ class ActorNN(Actor):
         if nn_step:
             # with # torch.no_grad():
             noise_normal = torch.randn(1, self.agent.n_act)
-            act = self.agent.get_action_cpu(observation)
+            act = self.agent.get_action(observation).cpu()
 
             self.act = act * (1 + self.noise * noise_normal) * self.max_speed
 
