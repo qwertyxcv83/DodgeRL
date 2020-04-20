@@ -17,7 +17,7 @@ def train(model_agent, train_set, test_set, epochs, print_epochs=1, loss_glider=
         mean_loss = 0.
         for i, data in enumerate(test_loader):
             mean_loss = (model_agent.loss(data).cpu() + mean_loss * i) / (i+1)
-    print("finished")
+    print("finished, loss: {:.4f}".format(mean_loss))
 
     des_loss = (mean_loss + .01) * 2
     opt.lr = .01  # min(.01 / mean_loss, .1)

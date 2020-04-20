@@ -24,31 +24,32 @@ def load_data(filename="./data.csv", max_size=float('inf'), console=True):
     return return_set
 
 
-def sample_game(actorNN, time_sec, overwrite=True, console=True):
+def sample_game(actorNN, time_sec, overwrite=True, console=True, filename="./data.csv"):
     g = dodge_game.DodgeGame()
-    rewards = g.run(actorNN, max_time=time_sec*1000, speed=1, run_in_background=True, overwrite=overwrite, console=console)
+    rewards = g.run(actorNN, max_time=time_sec*1000, speed=1, run_in_background=True, overwrite=overwrite, console=console, filename=filename)
     return rewards
 
 
 # 60 secs = 1000 datapoints
-def create_data(actorNN, secs=30, times=1, max_size=float('inf'), overwrite=True, console=True, console_sample=True):
+def create_data(actorNN, secs=30, times=1, max_size=float('inf'), overwrite=True, console=True, console_sample=False,
+                filename="./data.csv"):
 
     if console:
         print("playing: ", end='')
 
-    rewards = sample_game(actorNN, secs, overwrite=overwrite, console=console_sample)
+    rewards = sample_game(actorNN, secs, overwrite=overwrite, console=console_sample, filename=filename)
     n = 0
 
     for i in range(times - 1):
-        rewards += sample_game(actorNN, secs, overwrite=False, console=console_sample)
-        if console and i > float(times-1)/10 * (n+1):
+        rewards += sample_game(actorNN, secs, overwrite=False, console=console_sample, filename=filename)
+        if console and i + 1 >= float(times-1)/10 * (n+1):
             n += 1
             print("{:.0f} % ... ".format(float(i) / (times-1) * 100), end='')
 
     if console:
         print("\nsampling done, gathered {} rewards per minute".format(rewards * 60 / secs / times))
 
-    data_set = load_data(max_size=max_size, console=console)
+    data_set = load_data(max_size=max_size, console=console, filename=filename)
     return data_set, rewards
 
 

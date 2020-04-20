@@ -339,3 +339,21 @@ class ActorNN(Actor):
             self.act = act * (1 + self.noise * noise_normal) * self.max_speed
 
         return self.act
+
+
+class ActorRandom(Actor):
+    def __init__(self, agent, noise=.5, max_speed=1.5):
+        super().__init__(True)
+        self.agent = agent
+        self.noise = .5
+        self.max_speed = max_speed
+        self.act = torch.FloatTensor().new_zeros((1, agent.n_act))
+
+    def get_action(self, observation, user_input, nn_step):
+        if nn_step:
+            noise_normal = torch.randn(1, self.agent.n_act)
+            act = torch.randn(1, self.agent.n_act)
+
+            self.act = act * (1 + self.noise * noise_normal) * self.max_speed
+
+        return self.act
