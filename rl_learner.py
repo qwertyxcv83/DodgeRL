@@ -33,11 +33,11 @@ def create_data(actor, secs=30, times=1, n_parallel=1, max_size=float('inf'), ov
     if console:
         print("playing: ", end='')
 
-    sample_game(actor, secs, n_parallel=n_parallel, overwrite=overwrite, console=console_sample, filename=filename)
+    sample_game(actor, secs, n_parallel, overwrite=overwrite, console=console_sample, filename=filename)
     n = 0
 
     for i in range(times - 1):
-        sample_game(actor, secs, overwrite=False, console=console_sample, filename=filename)
+        sample_game(actor, secs, n_parallel, overwrite=False, console=console_sample, filename=filename)
         if console and i + 1 >= float(times-1)/10 * (n+1):
             n += 1
             print("{:.0f} % ... ".format(float(i) / (times-1) * 100), end='')
