@@ -1,7 +1,3 @@
-import pygame
-import os
-
-
 WIDTH = 1200
 HEIGHT = 675
 PLAYERWIDTH = 64
@@ -14,10 +10,6 @@ OBJECTSHOR = 5
 OBJECTSVER = 7
 ACT_DRAW_LENGTH = 60
 ACT_GRAD_LENGTH = 10
-
-
-def load_image(filename):
-    return pygame.image.load(os.path.join("resources", filename))
 
 
 def rect_collide(centerX1, centerY1, centerX2, centerY2, width1, height1, width2, height2):
@@ -42,5 +34,3 @@ def toDrawScaleX(x):
 
 def toDrawScaleY(y):
     return (y+1) / 2 * HEIGHT
-
-

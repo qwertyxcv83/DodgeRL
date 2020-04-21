@@ -59,12 +59,11 @@ class ModelAgent(torch.nn.Module):
         return grad
 
     def loss(self, data):
-        obs_in, act_in, obs_next_in, reward_time_in, reward_bool_in = data
+        obs_in, act_in, obs_next_in, reward_bool_in = data
         if self.is_cuda:
             obs_in = obs_in.cuda()
             act_in = act_in.cuda()
             obs_next_in = obs_next_in.cuda()
-            reward_time_in = reward_time_in.cuda()
             reward_bool_in = reward_bool_in.cuda()
 
         reward = self.get_reward(obs_in)
@@ -75,12 +74,11 @@ class ModelAgent(torch.nn.Module):
 
     def reward_accuracy(self, data):
         with torch.no_grad():
-            obs_in, act_in, obs_next_in, reward_time_in, reward_bool_in = data
+            obs_in, act_in, obs_next_in, reward_bool_in = data
             if self.is_cuda:
                 obs_in = obs_in.cuda()
                 act_in = act_in.cuda()
                 obs_next_in = obs_next_in.cuda()
-                reward_time_in = reward_time_in.cuda()
                 reward_bool_in = reward_bool_in.cuda()
 
             pred = self.get_reward(obs_in) > .5
