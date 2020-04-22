@@ -64,6 +64,9 @@ class ModelAgent(torch.nn.Module):
         r_next, e_next, p_next, w_next = self((world, policy))
 
         loss_reward = functional.binary_cross_entropy(reward, reward_in)
+        if reward.shape != reward_in.shape or (reward > 1).any() or (reward_in > 1).any() or (reward < 0).any() or (reward_in < 0).any():
+            raise Warning("This should not have happened")
+        
         loss_estimation = ModelAgent.estimator_loss(estimation, reward_in, e_next, (1, 1, 1))
         # loss_policy = ModelAgent.policy_loss(e_next, estimation)
         # loss_world = functional.mse_loss(world, obs_next_in)
