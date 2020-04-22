@@ -22,7 +22,7 @@ def load_data(filename="./data.csv", max_size=float('inf'), console=True):
 
 def sample_game(actor, time_sec, n_parallel, overwrite=True, console=True, filename="./data.csv"):
     game = game_parallel.DodgeParallel(n_parallel)
-    wrap = wrapper_sample.SampleWrapper(game)
+    wrap = wrapper_sample.WrapperSample(game)
     wrap.run(actor, time_sec * 1000, overwrite=overwrite, console=console, filename=filename)
 
 

@@ -1,12 +1,11 @@
 from torch.utils.data import Dataset
 import torch
 import pandas
-import os
 
 import game_parallel
 
 
-class SampleWrapper:
+class WrapperSample:
     def __init__(self, game: game_parallel.GameParallel,
                  millis_per_tick=60):
 
@@ -17,14 +16,16 @@ class SampleWrapper:
         self.game_stamp = 0
         self.overwrite = False
 
-        self.memory = MemoryCSV()
+        self.memory = None
 
     def run(self, actor, max_time, speed=1., overwrite=True, filename="./data.csv", console=True):
 
         if console:
             print("playing game ...", end="")
 
-        self.memory.clear()
+        self.memory = MemoryCSV(filename)
+        if overwrite:
+            self.memory.clear()
 
         self.game_stamp = 0  # time running, +1 every nn-tick
 
@@ -42,8 +43,6 @@ class SampleWrapper:
                 print(" {}% ...".format(int(10 * total_time / int(max_time/10))), end="")
 
             self.update(time_elapsed, speed, actor)
-
-        self.memory.finalize(filename=filename, overwrite=overwrite)
 
         if console:
             print(" finalized")
@@ -67,26 +66,19 @@ class SampleWrapper:
 
 
 class MemoryCSV:
-    def __init__(self, name="memory"):
-        self.filename_stream = "./temp/{}_stream.csv.temp".format(name)
+    def __init__(self, filename):
+        self.filename = filename
 
     def clear(self):
         # clear files
-        with open(self.filename_stream, 'w'):
+        with open(self.filename, 'w'):
             pass
 
     def append(self, value):
         obs, action, obs_next, reward = value
 
         data = torch.cat([obs, action, obs_next, reward.float()], dim=1).numpy()
-        pandas.DataFrame(data).to_csv(self.filename_stream, mode='a', index=None, header=False)
-
-    def finalize(self, filename="./data.csv", overwrite=True, delete_temp=True):
-        stream = pandas.read_csv(self.filename_stream, header=None).iloc[:, :].values
-
-        pandas.DataFrame(stream).to_csv(filename, mode='w' if overwrite else 'a', index=None, header=False)
-        if delete_temp:
-            os.remove(self.filename_stream)
+        pandas.DataFrame(data).to_csv(self.filename, mode='a', index=None, header=False)
 
 
 class DodgeDataset(Dataset):
