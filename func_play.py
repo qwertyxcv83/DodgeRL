@@ -13,3 +13,12 @@ def run_fast(path="./agent.pth", secs=60, speed=.4):
     ui = game_ui.DodgeUI()
     wrap = wrapper_play.WrapperPlay(physics, ui)
     wrap.run(actor, secs*1000, speed)
+
+
+def run_new(secs=60, speed=.4):
+    agent = rl_net.ModelAgent(30, 2, 2, False)
+    actor = actors.ActorNN(agent, noise=0)
+    physics = game_parallel.DodgeParallel()
+    ui = game_ui.DodgeUI()
+    wrap = wrapper_play.WrapperPlay(physics, ui)
+    wrap.run(actor, secs * 1000, speed)

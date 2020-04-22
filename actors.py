@@ -19,10 +19,11 @@ class ActorNN(Actor):
 
     def get_action(self, obs, user_input, nn_step):
         if nn_step:
-            noise_normal = torch.randn(obs.shape[0], self.agent.n_act)
-            act = self.agent.get_action(obs).cpu()
+            with torch.no_grad():
+                noise_normal = torch.randn(obs.shape[0], self.agent.n_act)
+                act = self.agent((obs, None))[2].cpu()
 
-            self.act = act * (1 + self.noise * noise_normal) * self.max_speed
+                self.act = act * (1 + self.noise * noise_normal) * self.max_speed
 
         return self.act
 

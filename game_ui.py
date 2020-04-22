@@ -71,9 +71,11 @@ class DodgeUI(GameUI):
 
         if actor.is_agent:
             with torch.no_grad():
-                p = actor.agent.get_reward(obs).cpu()
-            for i in range(p.shape[1]):
-                text_surface = font.render('Reward: {:.4f}'.format(p.numpy()[0, i]), False, (0, 0, 0))
+                r, e, _, _ = actor.agent((obs, None))
+                r = r.cpu()
+                e = e.cpu()
+            for i in range(r.shape[1]):
+                text_surface = font.render('Rew: {:.4f}, Est: {:.4f}'.format(r.numpy()[0, i], e.numpy()[0, i]), False, (0, 0, 0))
                 window.blit(text_surface, (0, 50 * i))
 
     def update_pause(self, actor, obs, user_input):
@@ -108,7 +110,7 @@ class DodgeUI(GameUI):
             f_playerx, f_playery, f_disth, f_distv, f_righty, f_lefty, f_downx, f_upx, f_presentx, f_presenty = \
                 self.decode_obs(obs_shadow)
 
-            window.blit(self.present_trans, (f_presentx - util.PRESENTWIDTH / 2, f_presenty - util.PRESENTWIDTH / 2))
+            window.blit(self.present_trans, (f_presentx - util.PRESENTWIDTH / 2, f_presenty - util.PRESENTHEIGHT / 2))
             for i in range(5):
                 window.blit(self.obs_trans, (f_disth - util.OBSTACLEWIDTH / 2, f_righty[i] - util.OBSTACLEWIDTH / 2))
             for i in range(5):

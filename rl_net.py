@@ -19,6 +19,8 @@ class ModelAgent(torch.nn.Module):
 
     def forward(self, values):
         obs, act = values
+        if act is None:
+            act = torch.FloatTensor().new_zeros(obs.shape[0], self.n_act)
         if self.is_cuda:
             obs = obs.cuda()
             act = act.cuda()
@@ -34,26 +36,6 @@ class ModelAgent(torch.nn.Module):
 
         return reward, estimation, policy, world
 
-    def get_action(self, obs):
-        act = torch.FloatTensor().new_zeros(obs.shape[0], self.n_act)
-        if self.is_cuda:
-            obs = obs.cuda()
-            act = act.cuda()
-
-        reward, estimation, policy, world = self((obs, act))
-
-        return policy
-
-    def get_reward(self, obs):
-        act = torch.FloatTensor().new_zeros(obs.shape[0], self.n_act)
-        if self.is_cuda:
-            obs = obs.cuda()
-            act = act.cuda()
-
-        reward, estimation, policy, world = self((obs, act))
-
-        return reward
-
     def reward_gradient(self, obs, rewards):
         if self.is_cuda:
             obs = obs.cuda()
@@ -63,7 +45,7 @@ class ModelAgent(torch.nn.Module):
         if obs.grad is not None:
             obs.grad.zero_()
 
-        rew = self.get_reward(obs) * rewards.reshape(1, 2)
+        rew = self((obs, None))[0] * rewards.reshape(1, 2)
         rew.sum().backward()
 
         grad = obs.grad
@@ -83,10 +65,10 @@ class ModelAgent(torch.nn.Module):
 
         loss_reward = functional.binary_cross_entropy(reward, reward_in)
         loss_estimation = ModelAgent.estimator_loss(estimation, reward_in, e_next, (1, 1, 1))
-        loss_policy = ModelAgent.policy_loss(e_next, estimation)
-        loss_world = functional.mse_loss(world, obs_next_in)
+        # loss_policy = ModelAgent.policy_loss(e_next, estimation)
+        # loss_world = functional.mse_loss(world, obs_next_in)
 
-        loss = torch.cat([loss_reward.flatten(), loss_estimation.flatten(), loss_policy.flatten(), loss_world.flatten()], dim=0)
+        loss = torch.cat([loss_reward.flatten(), loss_estimation.flatten()], dim=0)
 
         return loss
 
@@ -118,7 +100,7 @@ class ModelAgent(torch.nn.Module):
                 obs_next_in = obs_next_in.cuda()
                 reward_bool_in = reward_bool_in.cuda()
 
-            pred = self.get_reward(obs_in) > .5
+            pred = self((obs_in, None))[0] > .5
             truth = reward_bool_in.bool()
 
             correct_one = (pred & truth).sum(dim=0).cpu()
