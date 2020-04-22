@@ -14,26 +14,26 @@ def train(model_agent, train_set, test_set, epochs, print_epochs=1, loss_glider=
     with torch.no_grad():
         model_agent.eval()
 
-        mean_loss = 0.
+        mean_loss = None
         for i, data in enumerate(test_loader):
             mean_loss = (model_agent.loss(data).cpu() + mean_loss * i) / (i+1)
-    print("finished, loss: {:.4f}".format(mean_loss))
+    print("finished, loss: {}".format(mean_loss))
 
-    des_loss = (mean_loss + .01) * 2
+    des_loss = (mean_loss.mean() + .01) * 2
     opt.lr = .01  # min(.01 / mean_loss, .1)
-    gliding_loss = mean_loss
+    gliding_loss = mean_loss.mean()
     gliding_step = float(optimal_step)
 
     model_agent.train()
     sum_steps = 0.
-    sum_loss = 0.
+    sum_loss = torch.FloatTensor().new_zeros(mean_loss.shape)
     for epoch in range(1, epochs+1):
-        epoch_loss = 0.
+        epoch_loss = torch.FloatTensor().new_zeros(mean_loss.shape)
         epoch_steps = 0
         for i, data in enumerate(train_loader):
             loss, step = train_single(model_agent, data, opt=opt, des_loss=des_loss, console=False, max_steps=max_steps)
 
-            gliding_loss = (gliding_loss * loss_glider + loss) / (loss_glider + 1)
+            gliding_loss = (gliding_loss * loss_glider + loss.mean()) / (loss_glider + 1)
             gliding_step = (gliding_step * step_glider + step) / (step_glider + 1)
             des_loss = des_loss * (1.01 if gliding_step > optimal_step else 0.99)
             opt.lr = .01  # min(.01 / gliding_loss, .1)
@@ -45,11 +45,11 @@ def train(model_agent, train_set, test_set, epochs, print_epochs=1, loss_glider=
         sum_loss += epoch_loss
 
         if epoch % print_epochs == 0:
-            print("epoch: {}, des_loss: {:.3f}, mean loss: {:.4f}, mean steps: {:.4f}".format(
+            print("epoch: {}, des_loss: {:.3f}, mean loss: {}, mean steps: {:.4f}".format(
                 epoch, des_loss, sum_loss / print_epochs, sum_steps/print_epochs
             ))
             sum_steps = 0
-            sum_loss = 0
+            sum_loss = torch.FloatTensor().new_zeros(mean_loss.shape)
 
     model_agent.eval()
     evaluate(model_agent, test_loader)
@@ -60,22 +60,22 @@ def train_single(model, data, opt=None, des_loss=float('inf'), zero_step=True, c
     steps = 0
 
     loss = model.loss(data)
-    first_loss = float(loss)
+    first_loss = loss
     if not zero_step or loss > des_loss:
         opt.zero_grad()
-        loss.backward()
+        loss.mean().backward()
         opt.step()
         steps += 1
 
     while loss > des_loss and steps < max_steps:
         loss = model.loss(data)
         opt.zero_grad()
-        loss.backward()
+        loss.mean().backward()
         opt.step()
         steps += 1
 
     if console:
-        print("loss: {:.4f}, steps: {}".format(first_loss, steps))
+        print("loss: {}, steps: {}".format(first_loss, steps))
     return first_loss, steps
 
 
@@ -85,7 +85,7 @@ def evaluate(model, train_loader):
     sum_c0 = None
     sum_t0 = None
 
-    mean_loss = 0.
+    mean_loss = None
     for i, data in enumerate(train_loader):
         correct_one, total_one, correct_zero, total_zero = model.reward_accuracy(data)
         if i == 0:
@@ -98,7 +98,7 @@ def evaluate(model, train_loader):
             sum_t1 += total_one
             sum_c0 += correct_zero
             sum_t0 += total_zero
-        mean_loss = (mean_loss * i + model.loss(data).cpu()) / (i + 1)
+        mean_loss = (mean_loss * i + model.loss(data).cpu()) / (i + 1) if mean_loss is not None else model.loss(data).cpu()
     print()
     for i in range(sum_c1.shape[0]):
         print("total: {:.3f} %, ones: {:.3f} %, zeros: {:.3f} %, dataset_split: {:.3f} %".format(
@@ -107,4 +107,4 @@ def evaluate(model, train_loader):
             float(sum_c0[i])/float(sum_t0[i])*100,
             float(sum_t1[i])/float(sum_t1[i] + sum_t0[i])*100
         ))
-    print("mean loss: {:.4f}".format(mean_loss))
+    print("mean loss: {}".format(mean_loss))

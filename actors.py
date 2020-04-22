@@ -17,10 +17,10 @@ class ActorNN(Actor):
         self.max_speed = max_speed
         self.act = torch.FloatTensor().new_zeros((1, agent.n_act))
 
-    def get_action(self, observation, user_input, nn_step):
+    def get_action(self, obs, user_input, nn_step):
         if nn_step:
-            noise_normal = torch.randn(observation.shape[0], self.agent.n_act)
-            act = self.agent.get_action(observation).cpu()
+            noise_normal = torch.randn(obs.shape[0], self.agent.n_act)
+            act = self.agent.get_action(obs).cpu()
 
             self.act = act * (1 + self.noise * noise_normal) * self.max_speed
 

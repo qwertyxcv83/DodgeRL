@@ -5,42 +5,54 @@ import networks
 
 
 class ModelAgent(torch.nn.Module):
-    def __init__(self, n_in, n_reward, n_act, cuda):
+    def __init__(self, n_obs, n_reward, n_act, cuda):
         super(ModelAgent, self).__init__()
         n_hidden = 100
-        self.n_obs = n_in
+        self.n_obs = n_obs
         self.n_reward = n_reward
         self.n_act = n_act
         self.is_cuda = cuda
 
-        self.inp = torch.nn.Linear(n_in, n_hidden)
+        self.inp = torch.nn.Linear(n_obs + n_act, n_hidden)
         self.layer = networks.DenseNet([networks.MaxLayer(n_hidden, n_hidden, n_max=3) for _ in range(4)])
-        self.out = torch.nn.Linear(n_hidden, n_reward)
+        self.out = torch.nn.Linear(n_hidden, n_reward + n_reward + n_act + n_obs)
 
-    def forward(self, obs):
+    def forward(self, values):
+        obs, act = values
         if self.is_cuda:
             obs = obs.cuda()
+            act = act.cuda()
 
-        x = self.inp(obs)
+        x = self.inp(torch.cat([obs, act], dim=1))
         x = self.layer(x)
         out = self.out(x)
 
-        return out.sigmoid()
+        reward = out[:, :self.n_reward].sigmoid()
+        estimation = out[:, self.n_reward:self.n_reward*2].abs()
+        policy = out[:, self.n_reward*2:self.n_reward*2+self.n_act].tanh()
+        world = out[:, -self.n_obs:]
+
+        return reward, estimation, policy, world
 
     def get_action(self, obs):
+        act = torch.FloatTensor().new_zeros(obs.shape[0], self.n_act)
         if self.is_cuda:
             obs = obs.cuda()
+            act = act.cuda()
 
-        rew_grad = self.reward_gradient(obs, torch.FloatTensor().new_tensor([-1, .5]))
-        return rew_grad[:, :2].tanh()
-        # return torch.randn(2)
-        # return torch.tanh(self.policy(self.hidden(obs)))
+        reward, estimation, policy, world = self((obs, act))
+
+        return policy
 
     def get_reward(self, obs):
+        act = torch.FloatTensor().new_zeros(obs.shape[0], self.n_act)
         if self.is_cuda:
             obs = obs.cuda()
+            act = act.cuda()
 
-        return self(obs)
+        reward, estimation, policy, world = self((obs, act))
+
+        return reward
 
     def reward_gradient(self, obs, rewards):
         if self.is_cuda:
@@ -59,18 +71,43 @@ class ModelAgent(torch.nn.Module):
         return grad
 
     def loss(self, data):
-        obs_in, act_in, obs_next_in, reward_bool_in = data
+        obs_in, act_in, obs_next_in, reward_in = data
         if self.is_cuda:
             obs_in = obs_in.cuda()
             act_in = act_in.cuda()
             obs_next_in = obs_next_in.cuda()
-            reward_bool_in = reward_bool_in.cuda()
+            reward_in = reward_in.cuda()
 
-        reward = self.get_reward(obs_in)
+        reward, estimation, policy, world = self((obs_in, act_in))
+        r_next, e_next, p_next, w_next = self((world, policy))
 
-        loss = functional.binary_cross_entropy(reward, reward_bool_in)
+        loss_reward = functional.binary_cross_entropy(reward, reward_in)
+        loss_estimation = ModelAgent.estimator_loss(estimation, reward_in, e_next, (1, 1, 1))
+        loss_policy = ModelAgent.policy_loss(e_next, estimation)
+        loss_world = functional.mse_loss(world, obs_next_in)
+
+        loss = torch.cat([loss_reward.flatten(), loss_estimation.flatten(), loss_policy.flatten(), loss_world.flatten()], dim=0)
 
         return loss
+
+    @staticmethod
+    def estimator_loss(estimation, reward_in, e_next, weights):
+        # batch mean should be around 1
+        loss_mean = (estimation.mean(dim=0) - 1).mean()**2
+
+        # est > 0, reward_in = 1/0
+        loss_one = (estimation * reward_in).mean()**2
+
+        # difference to next estimation
+        loss_difference = (estimation - e_next).mean()**2
+
+        w1, w2, w3 = weights
+
+        return w1 * loss_mean + w2 * loss_one + w3 * loss_difference
+
+    @staticmethod
+    def policy_loss(e_next, estimation):
+        return (estimation - e_next).mean()
 
     def reward_accuracy(self, data):
         with torch.no_grad():
