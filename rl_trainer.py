@@ -98,7 +98,7 @@ def evaluate(model, train_loader):
             sum_t1 += total_one
             sum_c0 += correct_zero
             sum_t0 += total_zero
-        mean_loss = (mean_loss * i + model.loss(data).cpu()) / (i + 1) if mean_loss is not None else model.loss(data).cpu()
+        mean_loss = (mean_loss * i + model.loss(data).cpu().detach()) / (i + 1) if mean_loss is not None else model.loss(data).cpu()
     print()
     for i in range(sum_c1.shape[0]):
         print("total: {:.3f} %, ones: {:.3f} %, zeros: {:.3f} %, dataset_split: {:.3f} %".format(
