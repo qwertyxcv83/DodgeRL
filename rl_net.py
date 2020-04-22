@@ -30,8 +30,8 @@ class ModelAgent(torch.nn.Module):
         out = self.out(x)
 
         reward = out[:, :self.n_reward].sigmoid()
-        estimation = out[:, self.n_reward:self.n_reward*2].abs()
-        policy = out[:, self.n_reward*2:self.n_reward*2+self.n_act].tanh()
+        estimation = out[:, self.n_reward:self.n_reward * 2].abs()
+        policy = out[:, self.n_reward * 2:self.n_reward * 2 + self.n_act].tanh()
         world = out[:, -self.n_obs:]
 
         return reward, estimation, policy, world
@@ -63,32 +63,35 @@ class ModelAgent(torch.nn.Module):
         reward, estimation, policy, world = self((obs_in, act_in))
         r_next, e_next, p_next, w_next = self((world, policy))
 
-        loss_reward = functional.binary_cross_entropy(reward, reward_in)
-        if reward.shape != reward_in.shape or (reward > 1).any() or (reward_in > 1).any() or (reward < 0).any() or (reward_in < 0).any():
+        if reward.shape != reward_in.shape or (reward > 1).any() or (reward_in > 1).any() or (reward < 0).any() or (
+                reward_in < 0).any():
             raise Warning("This should not have happened")
-        
-        loss_estimation = ModelAgent.estimator_loss(estimation, reward_in, e_next, (1, 1, 1))
+        loss_reward = functional.binary_cross_entropy(reward, reward_in)
+
+        loss_estimation = ModelAgent.estimator_loss(estimation, reward_in, e_next)
         # loss_policy = ModelAgent.policy_loss(e_next, estimation)
         # loss_world = functional.mse_loss(world, obs_next_in)
 
-        loss = torch.cat([loss_reward.flatten(), loss_estimation.flatten()], dim=0)
+        loss = torch.cat([loss_reward.flatten(),
+                          loss_estimation[0].flatten(),
+                          loss_estimation[1].flatten(),
+                          loss_estimation[2].flatten()],
+                         dim=0)
 
         return loss
 
     @staticmethod
-    def estimator_loss(estimation, reward_in, e_next, weights):
+    def estimator_loss(estimation, reward_in, e_next):
         # batch mean should be around 1
-        loss_mean = (estimation.mean(dim=0) - 1).mean()**2
+        loss_mean = (estimation.mean(dim=0) - 1).mean() ** 2
 
         # est > 0, reward_in = 1/0
-        loss_one = (estimation * reward_in).mean()**2
+        loss_one = (estimation * reward_in).mean() ** 2
 
         # difference to next estimation
-        loss_difference = (estimation - e_next).mean()**2
+        loss_difference = (estimation - e_next).mean() ** 2
 
-        w1, w2, w3 = weights
-
-        return w1 * loss_mean + w2 * loss_one + w3 * loss_difference
+        return loss_mean, loss_one, loss_difference
 
     @staticmethod
     def policy_loss(e_next, estimation):
