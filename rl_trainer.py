@@ -60,7 +60,7 @@ def train_single(model, data, opt=None, des_loss=float('inf'), zero_step=True, c
     steps = 0
 
     loss = model.loss(data)
-    first_loss = loss.cpu()
+    first_loss = loss.cpu().detach()
     if not zero_step or loss.mean() > des_loss:
         opt.zero_grad()
         loss.mean().backward()
