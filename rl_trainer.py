@@ -67,7 +67,7 @@ def train_single(model, data, opt=None, des_loss=float('inf'), zero_step=True, c
         opt.step()
         steps += 1
 
-    while loss > des_loss and steps < max_steps:
+    while loss.mean() > des_loss and steps < max_steps:
         loss = model.loss(data)
         opt.zero_grad()
         loss.mean().backward()
