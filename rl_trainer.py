@@ -16,7 +16,7 @@ def train(model_agent, train_set, test_set, epochs, print_epochs=1, loss_glider=
 
         mean_loss = None
         for i, data in enumerate(test_loader):
-            mean_loss = (model_agent.loss(data).cpu() + mean_loss * i) / (i+1)
+            mean_loss = (model_agent.loss(data).cpu() + mean_loss * i) / (i+1) if mean_loss is not None else model_agent.loss(data).cpu()
     print("finished, loss: {}".format(mean_loss))
 
     des_loss = (mean_loss.mean() + .01) * 2

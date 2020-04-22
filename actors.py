@@ -29,17 +29,17 @@ class ActorNN(Actor):
 
 
 class ActorRandom(Actor):
-    def __init__(self, agent, noise=.5, max_speed=1.5):
-        super().__init__(True)
-        self.agent = agent
+    def __init__(self, n_act, noise=.5, max_speed=1.5):
+        super().__init__(False)
+        self.n_act = n_act
         self.noise = noise
         self.max_speed = max_speed
         self.act = torch.FloatTensor().new_zeros((1, agent.n_act))
 
     def get_action(self, observation, user_input, nn_step):
         if nn_step:
-            noise_normal = torch.randn(observation.shape[0], self.agent.n_act)
-            act = torch.randn(observation.shape[0], self.agent.n_act)
+            noise_normal = torch.randn(observation.shape[0], self.n_act)
+            act = torch.randn(observation.shape[0], self.n_act)
 
             self.act = act * (1 + self.noise * noise_normal) * self.max_speed
 
