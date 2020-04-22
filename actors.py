@@ -34,7 +34,7 @@ class ActorRandom(Actor):
         self.n_act = n_act
         self.noise = noise
         self.max_speed = max_speed
-        self.act = torch.FloatTensor().new_zeros((1, agent.n_act))
+        self.act = torch.FloatTensor().new_zeros((1, n_act))
 
     def get_action(self, observation, user_input, nn_step):
         if nn_step:
