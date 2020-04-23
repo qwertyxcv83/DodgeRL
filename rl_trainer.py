@@ -6,6 +6,9 @@ def train(model_agent, train_set, test_set, epochs, print_epochs=1, loss_glider=
           max_steps=100, batch_size_train=128, batch_size_test=128, lr=.01,
           weights=torch.FloatTensor().new_tensor([1, 1, 1, 20, .01])):
 
+    if model_agent.is_cuda:
+        weights = weights.cuda()
+
     train_loader = DataLoader(dataset=train_set, batch_size=batch_size_train, shuffle=True, drop_last=True)
     test_loader = DataLoader(dataset=test_set, batch_size=batch_size_test, shuffle=False, drop_last=True)
 
