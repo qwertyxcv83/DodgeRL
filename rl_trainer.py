@@ -3,7 +3,8 @@ from torch.utils.data import DataLoader
 
 
 def train(model_agent, train_set, test_set, epochs, print_epochs=1, loss_glider=20, step_glider=10, optimal_step=2,
-          max_steps=100, batch_size_train=128, batch_size_test=128, lr=.01):
+          max_steps=100, batch_size_train=128, batch_size_test=128, lr=.01,
+          weights=torch.FloatTensor().new_tensor([1, 1, 1, 20, .01])):
 
     train_loader = DataLoader(dataset=train_set, batch_size=batch_size_train, shuffle=True, drop_last=True)
     test_loader = DataLoader(dataset=test_set, batch_size=batch_size_test, shuffle=False, drop_last=True)
@@ -30,7 +31,7 @@ def train(model_agent, train_set, test_set, epochs, print_epochs=1, loss_glider=
         epoch_loss = torch.FloatTensor().new_zeros(mean_loss.shape)
         epoch_steps = 0
         for i, data in enumerate(train_loader):
-            loss, step = train_single(model_agent, data, opt=opt, des_loss=des_loss, console=False, max_steps=max_steps)
+            loss, step = train_single(model_agent, data, weights, opt=opt, des_loss=des_loss, console=False, max_steps=max_steps)
 
             gliding_loss = (gliding_loss * loss_glider + loss.mean()) / (loss_glider + 1)
             gliding_step = (gliding_step * step_glider + step) / (step_glider + 1)
@@ -53,22 +54,22 @@ def train(model_agent, train_set, test_set, epochs, print_epochs=1, loss_glider=
     evaluate(model_agent, test_loader)
 
 
-def train_single(model, data, opt=None, des_loss=float('inf'), zero_step=True, console=True, max_steps=float('inf')):
-
+def train_single(model, data, weights, opt=None, des_loss=float('inf'), zero_step=True, console=True,
+                 max_steps=float('inf')):
     steps = 0
 
     loss = model.loss(data)
     first_loss = loss.cpu().detach()
     if not zero_step or loss.mean() > des_loss:
         opt.zero_grad()
-        loss.mean().backward()
+        (loss * weights).mean().backward()
         opt.step()
         steps += 1
 
     while loss.mean() > des_loss and steps < max_steps:
         loss = model.loss(data)
         opt.zero_grad()
-        loss.mean().backward()
+        (loss * weights).mean().backward()
         opt.step()
         steps += 1
 

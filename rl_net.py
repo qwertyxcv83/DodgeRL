@@ -37,7 +37,6 @@ class ModelAgent(torch.nn.Module):
         return reward, estimation, policy, world
 
     def loss(self, data,
-             weights=torch.FloatTensor().new_tensor([4, 1, 1, 20, .01]),
              reward_weights=torch.FloatTensor().new_tensor([-1, 1])):
         obs_in, act_in, obs_next_in, reward_in = data
         if self.is_cuda:
@@ -60,7 +59,7 @@ class ModelAgent(torch.nn.Module):
                           loss_estimation[1].flatten(),
                           loss_estimation[2].flatten(),
                           loss_policy.flatten()],
-                         dim=0) * weights
+                         dim=0)
 
         return loss
 
