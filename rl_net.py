@@ -49,7 +49,7 @@ class ModelAgent(torch.nn.Module):
         reward, estimation, policy, _ = self((obs_in, act_in))
         _, e_next, _, _ = self((obs_next_in, policy))
 
-        loss_reward = (reward_in * reward.clamp(1e-3, 1-1e-3).log() + (1-reward_in) * (1-reward).clamp(1e-3, 1-1e-3).log()).mean()
+        loss_reward = (reward_in * reward.clamp(1e-2, 1-1e-2).log() + (1-reward_in) * (1-reward).clamp(1e-2, 1-1e-2).log()).mean()
 
         loss_estimation = ModelAgent.estimator_loss(estimation, e_next, reward_in)
         loss_policy = ModelAgent.policy_loss(estimation, e_next, reward_weights)
