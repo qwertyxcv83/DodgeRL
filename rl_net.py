@@ -36,52 +36,39 @@ class ModelAgent(torch.nn.Module):
 
         return reward, estimation, policy, world
 
-    def loss(self, data):
+    def loss(self, data,
+             weights=torch.FloatTensor().new_tensor([4, 1, 1, 10, 1]),
+             reward_weights=torch.FloatTensor().new_tensor([-1, 1])):
         obs_in, act_in, obs_next_in, reward_in = data
         if self.is_cuda:
             obs_in = obs_in.cuda()
             act_in = act_in.cuda()
             obs_next_in = obs_next_in.cuda()
             reward_in = reward_in.cuda()
+            weights = weights.cuda()
 
-        reward, estimation, policy, world = self((obs_in, act_in))
-        _, e_next, _, _ = self((obs_next_in, None))
-        r_np, e_np, p_np, w_np = self((world, policy))
+        reward, estimation, policy, _ = self((obs_in, act_in))
+        _, e_next, _, _ = self((obs_next_in, policy))
 
-        try:
-            if reward.shape != reward_in.shape or (reward > 1).any() or (reward_in > 1).any() or (reward < 0).any() or (
-                    reward_in < 0).any() or torch.isnan(reward).any():
-                raise Warning("This should not have happened")
-            loss_reward = functional.binary_cross_entropy(reward, reward_in)
-        except RuntimeError:
-            print(reward)
-            print(reward_in)
-            loss_reward = torch.FloatTensor().new_tensor([0]).cuda()
-        except:
-            print("another error")
-            loss_reward = torch.FloatTensor().new_tensor([0]).cuda()
-
-        if torch.isnan(estimation).any() or torch.isnan(e_np).any():
-            raise Warning("Estimation nan")
-
-        loss_estimation = ModelAgent.estimator_loss(estimation, reward_in, e_next)
-        # loss_policy = ModelAgent.policy_loss(e_next, estimation)
-        # loss_world = functional.mse_loss(world, obs_next_in)
+        loss_reward = functional.binary_cross_entropy(reward, reward_in)
+        loss_estimation = ModelAgent.estimator_loss(estimation, e_next, reward_in)
+        loss_policy = ModelAgent.policy_loss(estimation, e_next, reward_weights)
 
         loss = torch.cat([loss_reward.flatten(),
                           loss_estimation[0].flatten(),
                           loss_estimation[1].flatten(),
-                          loss_estimation[2].flatten()],
-                         dim=0)
+                          loss_estimation[2].flatten(),
+                          loss_policy.flatten()],
+                         dim=0) * weights
 
         return loss
 
     @staticmethod
-    def estimator_loss(estimation, reward_in, e_next):
+    def estimator_loss(estimation, e_next, reward_in):
         # batch mean should be around 1
         loss_mean = (estimation.mean(dim=0) - 1).mean() ** 2
 
-        # est > 0, reward_in = 1/0
+        # est > 0, reward_in = 1/0 --> mean distance to zero for reward_in=True squared
         loss_one = ((estimation * reward_in).sum(dim=0) / reward_in.sum(dim=0).clamp(1)).mean() ** 2
 
         # difference to next estimation
@@ -90,8 +77,8 @@ class ModelAgent(torch.nn.Module):
         return loss_mean, loss_one, loss_difference
 
     @staticmethod
-    def policy_loss(e_next, estimation):
-        return (estimation - e_next).mean()
+    def policy_loss(estimation, e_next, reward_weights):
+        return ((estimation - e_next) * reward_weights).mean()
 
     def reward_accuracy(self, data):
         with torch.no_grad():

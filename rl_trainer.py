@@ -3,12 +3,12 @@ from torch.utils.data import DataLoader
 
 
 def train(model_agent, train_set, test_set, epochs, print_epochs=1, loss_glider=20, step_glider=10, optimal_step=2,
-          max_steps=100, batch_size_train=128, batch_size_test=128):
+          max_steps=100, batch_size_train=128, batch_size_test=128, lr=.01):
 
     train_loader = DataLoader(dataset=train_set, batch_size=batch_size_train, shuffle=True, drop_last=True)
     test_loader = DataLoader(dataset=test_set, batch_size=batch_size_test, shuffle=False, drop_last=True)
 
-    opt = torch.optim.SGD(model_agent.parameters(), lr=.01)
+    opt = torch.optim.SGD(model_agent.parameters(), lr=lr)
 
     print("warm-up ", end='')
     with torch.no_grad():
@@ -20,7 +20,6 @@ def train(model_agent, train_set, test_set, epochs, print_epochs=1, loss_glider=
     print("finished, loss: {}".format(mean_loss))
 
     des_loss = (mean_loss.mean() + .01) * 2
-    opt.lr = .01  # min(.01 / mean_loss, .1)
     gliding_loss = mean_loss.mean()
     gliding_step = float(optimal_step)
 
@@ -36,7 +35,6 @@ def train(model_agent, train_set, test_set, epochs, print_epochs=1, loss_glider=
             gliding_loss = (gliding_loss * loss_glider + loss.mean()) / (loss_glider + 1)
             gliding_step = (gliding_step * step_glider + step) / (step_glider + 1)
             des_loss = des_loss * (1.01 if gliding_step > optimal_step else 0.99)
-            opt.lr = .01  # min(.01 / gliding_loss, .1)
 
             epoch_steps = (epoch_steps * i + step) / (i+1)
             epoch_loss = (epoch_loss * i + loss) / (i+1)
