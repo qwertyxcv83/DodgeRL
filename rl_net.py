@@ -49,13 +49,7 @@ class ModelAgent(torch.nn.Module):
         reward, estimation, policy, _ = self((obs_in, act_in))
         _, e_next, _, _ = self((obs_next_in, policy))
 
-        isnan = torch.isnan(reward)
-        shape_r = reward.shape
-        shape_ri = reward_in.shape
-        try:
-            loss_reward = functional.binary_cross_entropy(reward, reward_in)
-        except:
-            print("{}, {}, {}".format(isnan, shape_r, shape_ri))
+        loss_reward = (reward_in * reward.log() + (1-reward_in) * (1-reward).log()).mean()
 
         loss_estimation = ModelAgent.estimator_loss(estimation, e_next, reward_in)
         loss_policy = ModelAgent.policy_loss(estimation, e_next, reward_weights)
