@@ -62,12 +62,12 @@ class ModelAgent(torch.nn.Module):
 
         if torch.isnan(estimation).any() or torch.isnan(e_next).any():
             raise Warning("Estimation nan")
-        
+
         loss_estimation = ModelAgent.estimator_loss(estimation, reward_in, e_next)
         # loss_policy = ModelAgent.policy_loss(e_next, estimation)
         # loss_world = functional.mse_loss(world, obs_next_in)
 
-        loss = torch.cat([loss_reward.flatten(),
+        loss = torch.cat([  # loss_reward.flatten(),
                           loss_estimation[0].flatten(),
                           loss_estimation[1].flatten(),
                           loss_estimation[2].flatten()],
