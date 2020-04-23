@@ -4,7 +4,9 @@ from torch.utils.data import DataLoader
 
 def train(model_agent, train_set, test_set, epochs, print_epochs=1, loss_glider=20, step_glider=10, optimal_step=2,
           max_steps=100, batch_size_train=128, batch_size_test=128, lr=.01,
-          weights=torch.FloatTensor().new_tensor([1, 1, 1, 20, .01])):
+          weights=torch.FloatTensor().new_tensor([1, 1, 10, 10, .01])):
+
+    print("losses: reward, estimation bce, estimation conti, delta, policy")
 
     if model_agent.is_cuda:
         weights = weights.cuda()

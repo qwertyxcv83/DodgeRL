@@ -15,7 +15,7 @@ class ModelAgent(torch.nn.Module):
 
         self.inp = torch.nn.Linear(n_obs + n_act, n_hidden)
         self.layer = networks.DenseNet([networks.MaxLayer(n_hidden, n_hidden, n_max=3) for _ in range(4)])
-        self.out = torch.nn.Linear(n_hidden, n_reward + n_reward + n_act + n_obs)
+        self.out = torch.nn.Linear(n_hidden, n_reward + n_reward + n_act + n_reward)
 
     def forward(self, values):
         obs, act = values
@@ -30,11 +30,11 @@ class ModelAgent(torch.nn.Module):
         out = self.out(x)
 
         reward = out[:, :self.n_reward].sigmoid()
-        estimation = out[:, self.n_reward:self.n_reward * 2].abs()
+        estimation = out[:, self.n_reward:self.n_reward * 2].sigmoid()
         policy = out[:, self.n_reward * 2:self.n_reward * 2 + self.n_act].tanh()
-        world = out[:, -self.n_obs:]
+        delta = out[:, -self.n_reward:].tanh()
 
-        return reward, estimation, policy, world
+        return reward, estimation, policy, delta
 
     def loss(self, data,
              reward_weights=torch.FloatTensor().new_tensor([-1, 1])):
@@ -46,20 +46,18 @@ class ModelAgent(torch.nn.Module):
             reward_in = reward_in.cuda()
             reward_weights = reward_weights.cuda()
 
-        reward, estimation, policy, _ = self((obs_in, act_in))
-        _, e_next, _, _ = self((obs_next_in, policy))
+        reward, estimation, policy, delta = self((obs_in, act_in))
+        _, e_next, _, delta_next = self((obs_next_in, policy))
 
-        loss_reward = \
-            torch.FloatTensor().new_tensor([0]).cuda()
-            # (reward_in * reward.clamp(1e-2, 1-1e-2).log() + (1-reward_in) * (1-reward).clamp(1e-2, 1-1e-2).log()).mean()
-
+        loss_reward = functional.binary_cross_entropy(reward, reward_in)
         loss_estimation = ModelAgent.estimator_loss(estimation, e_next, reward_in)
-        loss_policy = ModelAgent.policy_loss(estimation, e_next, reward_weights)
+        loss_delta = ModelAgent.delta_loss(estimation, e_next, delta)
+        loss_policy = ModelAgent.policy_loss(delta_next, reward_weights)
 
         loss = torch.cat([loss_reward.flatten(),
                           loss_estimation[0].flatten(),
                           loss_estimation[1].flatten(),
-                          loss_estimation[2].flatten(),
+                          loss_delta.flatten(),
                           loss_policy.flatten()],
                          dim=0)
 
@@ -67,20 +65,21 @@ class ModelAgent(torch.nn.Module):
 
     @staticmethod
     def estimator_loss(estimation, e_next, reward_in):
-        # batch mean should be around 1
-        loss_mean = (estimation.mean(dim=0) - 1).mean() ** 2
 
-        # est > 0, reward_in = 1/0 --> mean distance to zero for reward_in=True squared
-        loss_one = ((estimation * reward_in).sum(dim=0) / reward_in.sum(dim=0).clamp(1)).mean() ** 2
+        loss_bce = functional.binary_cross_entropy(estimation, reward_in)
 
-        # difference to next estimation
+        # difference to next estimation -> function should be continuous
         loss_difference = (estimation - e_next).mean() ** 2
 
-        return loss_mean, loss_one, loss_difference
+        return loss_bce, loss_difference
 
     @staticmethod
-    def policy_loss(estimation, e_next, reward_weights):
-        return ((estimation - e_next) * reward_weights).mean()
+    def delta_loss(estimation, e_next, delta):
+        return functional.mse_loss(delta, e_next - estimation)
+
+    @staticmethod
+    def policy_loss(delta_next, reward_weights):
+        return - (delta_next * reward_weights).mean()
 
     def reward_accuracy(self, data):
         with torch.no_grad():
