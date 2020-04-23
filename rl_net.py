@@ -79,7 +79,7 @@ class ModelAgent(torch.nn.Module):
 
     @staticmethod
     def policy_loss(delta_next, reward_weights):
-        return - (delta_next * reward_weights).mean()
+        return functional.softplus(-(delta_next * reward_weights).mean())
 
     def reward_accuracy(self, data):
         with torch.no_grad():

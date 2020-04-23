@@ -4,7 +4,7 @@ from torch.utils.data import DataLoader
 
 def train(model_agent, train_set, test_set, epochs, print_epochs=1, loss_glider=20, step_glider=10, optimal_step=2,
           max_steps=100, batch_size_train=128, batch_size_test=128, lr=.01,
-          weights=torch.FloatTensor().new_tensor([1, 1, 10, 10, .01])):
+          weights=torch.FloatTensor().new_tensor([1] * 5)):
 
     print("losses: reward, estimation bce, estimation conti, delta, policy")
 
@@ -102,7 +102,7 @@ def evaluate(model, train_loader):
             sum_t1 += total_one
             sum_c0 += correct_zero
             sum_t0 += total_zero
-        mean_loss = (mean_loss * i + model.loss(data).cpu().detach()) / (i + 1) if mean_loss is not None else model.loss(data).cpu()
+        mean_loss = (mean_loss * i + model.loss(data).cpu().detach()) / (i + 1) if mean_loss is not None else model.loss(data).cpu().detach()
     print()
     for i in range(sum_c1.shape[0]):
         print("total: {:.3f} %, ones: {:.3f} %, zeros: {:.3f} %, dataset_split: {:.3f} %".format(
