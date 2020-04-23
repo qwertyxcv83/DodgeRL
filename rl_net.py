@@ -50,7 +50,7 @@ class ModelAgent(torch.nn.Module):
         _, e_next, _, _ = self((obs_next_in, policy))
 
         loss_reward = \
-            torch.FloatTensor().new_tensor([0])
+            torch.FloatTensor().new_tensor([0]).cuda()
             # (reward_in * reward.clamp(1e-2, 1-1e-2).log() + (1-reward_in) * (1-reward).clamp(1e-2, 1-1e-2).log()).mean()
 
         loss_estimation = ModelAgent.estimator_loss(estimation, e_next, reward_in)
