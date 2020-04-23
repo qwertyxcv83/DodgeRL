@@ -36,22 +36,6 @@ class ModelAgent(torch.nn.Module):
 
         return reward, estimation, policy, world
 
-    def reward_gradient(self, obs, rewards):
-        if self.is_cuda:
-            obs = obs.cuda()
-            rewards = rewards.cuda()
-
-        obs.requires_grad_()
-        if obs.grad is not None:
-            obs.grad.zero_()
-
-        rew = self((obs, None))[0] * rewards.reshape(1, 2)
-        rew.sum().backward()
-
-        grad = obs.grad
-        obs.requires_grad_(False)
-        return grad
-
     def loss(self, data):
         obs_in, act_in, obs_next_in, reward_in = data
         if self.is_cuda:
@@ -65,14 +49,20 @@ class ModelAgent(torch.nn.Module):
 
         try:
             if reward.shape != reward_in.shape or (reward > 1).any() or (reward_in > 1).any() or (reward < 0).any() or (
-                    reward_in < 0).any():
+                    reward_in < 0).any() or torch.isnan(reward).any():
                 raise Warning("This should not have happened")
             loss_reward = functional.binary_cross_entropy(reward, reward_in)
         except RuntimeError:
             print(reward)
             print(reward_in)
-            loss_reward = torch.FloatTensor().new_tensor([0])
+            loss_reward = torch.FloatTensor().new_tensor([0]).cuda()
+        except:
+            print("another error")
+            loss_reward = torch.FloatTensor().new_tensor([0]).cuda()
 
+        if torch.isnan(estimation).any() or torch.isnan(e_next).any():
+            raise Warning("Estimation nan")
+        
         loss_estimation = ModelAgent.estimator_loss(estimation, reward_in, e_next)
         # loss_policy = ModelAgent.policy_loss(e_next, estimation)
         # loss_world = functional.mse_loss(world, obs_next_in)
@@ -120,3 +110,19 @@ class ModelAgent(torch.nn.Module):
             total_zero = (~truth).sum(dim=0).cpu()
 
             return correct_one, total_one, correct_zero, total_zero
+
+    def reward_gradient(self, obs, rewards):
+        if self.is_cuda:
+            obs = obs.cuda()
+            rewards = rewards.cuda()
+
+        obs.requires_grad_()
+        if obs.grad is not None:
+            obs.grad.zero_()
+
+        rew = self((obs, None))[0] * rewards.reshape(1, 2)
+        rew.sum().backward()
+
+        grad = obs.grad
+        obs.requires_grad_(False)
+        return grad
