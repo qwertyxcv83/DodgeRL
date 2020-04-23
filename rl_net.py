@@ -46,6 +46,7 @@ class ModelAgent(torch.nn.Module):
             obs_next_in = obs_next_in.cuda()
             reward_in = reward_in.cuda()
             weights = weights.cuda()
+            reward_weights = reward_weights.cuda()
 
         reward, estimation, policy, _ = self((obs_in, act_in))
         _, e_next, _, _ = self((obs_next_in, policy))
