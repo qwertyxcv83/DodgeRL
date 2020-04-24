@@ -5,9 +5,8 @@ import networks
 
 
 class ModelAgent(torch.nn.Module):
-    def __init__(self, n_obs, n_act, reward_weights, cuda):
+    def __init__(self, n_obs, n_act, reward_weights, cuda, n_hidden=100):
         super(ModelAgent, self).__init__()
-        n_hidden = 100
         self.n_obs = n_obs
         self.n_reward = len(reward_weights)
         self.reward_weights = torch.FloatTensor().new_tensor(reward_weights).cuda() if cuda else \
