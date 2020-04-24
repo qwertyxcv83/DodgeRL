@@ -25,8 +25,8 @@ def train(model_agent, train_set, test_set, epochs, print_epochs=1, loss_glider=
             mean_loss = (model_agent.loss(data).cpu() + mean_loss * i) / (i+1) if mean_loss is not None else model_agent.loss(data).cpu()
     print("finished, loss: {}".format(mean_loss))
 
-    des_loss = ((mean_loss * weights.cpu()).mean() + .01) * 2
-    gliding_loss = (mean_loss * weights.cpu()).mean()
+    des_loss = ((mean_loss * weights.cpu()).sum() + .01) * 2
+    gliding_loss = (mean_loss * weights.cpu()).sum()
     gliding_step = float(optimal_step)
 
     model_agent.train()
@@ -38,7 +38,7 @@ def train(model_agent, train_set, test_set, epochs, print_epochs=1, loss_glider=
         for i, data in enumerate(train_loader):
             loss, step = train_single(model_agent, data, weights, opt=opt, des_loss=des_loss, console=False, max_steps=max_steps)
 
-            gliding_loss = (gliding_loss * loss_glider + (loss * weights.cpu()).mean()) / (loss_glider + 1)
+            gliding_loss = (gliding_loss * loss_glider + (loss * weights.cpu()).sum()) / (loss_glider + 1)
             gliding_step = (gliding_step * step_glider + step) / (step_glider + 1)
             des_loss = des_loss * (1.01 if gliding_step > optimal_step else 0.99)
 
@@ -65,16 +65,16 @@ def train_single(model, data, weights, opt=None, des_loss=float('inf'), zero_ste
 
     loss = model.loss(data)
     first_loss = loss.cpu().detach()
-    if not zero_step or (loss * weights).mean() > des_loss:
+    if not zero_step or (loss * weights).sum() > des_loss:
         opt.zero_grad()
-        (loss * weights).mean().backward()
+        (loss * weights).sum().backward()
         opt.step()
         steps += 1
 
-    while (loss * weights).mean() > des_loss and steps < max_steps:
+    while (loss * weights).sum() > des_loss and steps < max_steps:
         loss = model.loss(data)
         opt.zero_grad()
-        (loss * weights).mean().backward()
+        (loss * weights).sum().backward()
         opt.step()
         steps += 1
 
