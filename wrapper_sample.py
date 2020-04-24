@@ -81,7 +81,8 @@ class MemoryCSV:
         pandas.DataFrame(data).to_csv(self.filename, mode='a', index=None, header=False)
 
 
-class DodgeDataset(Dataset):
+# consists of: obs, act, nextobs, reward(obs)
+class CustomDataset(Dataset):
     def __init__(self, obs, action, obs_next, reward):
         self.obs = obs
         self.action = action

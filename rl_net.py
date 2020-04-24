@@ -5,17 +5,18 @@ import networks
 
 
 class ModelAgent(torch.nn.Module):
-    def __init__(self, n_obs, n_reward, n_act, cuda):
+    def __init__(self, n_obs, n_act, reward_weights, cuda):
         super(ModelAgent, self).__init__()
         n_hidden = 100
         self.n_obs = n_obs
-        self.n_reward = n_reward
+        self.n_reward = len(reward_weights)
+        self.reward_weights = reward_weights.cuda() if cuda else reward_weights
         self.n_act = n_act
         self.is_cuda = cuda
 
         self.inp = torch.nn.Linear(n_obs + n_act, n_hidden)
         self.layer = networks.DenseNet([networks.MaxLayer(n_hidden, n_hidden, n_max=3) for _ in range(4)])
-        self.out = torch.nn.Linear(n_hidden, n_reward + n_reward + n_act + n_reward)
+        self.out = torch.nn.Linear(n_hidden, self.n_reward + self.n_reward + n_act + self.n_reward)
 
     def forward(self, values):
         obs, act = values
@@ -36,15 +37,13 @@ class ModelAgent(torch.nn.Module):
 
         return reward, estimation, policy, delta
 
-    def loss(self, data,
-             reward_weights=torch.FloatTensor().new_tensor([-1, 1])):
+    def loss(self, data):
         obs_in, act_in, obs_next_in, reward_in = data
         if self.is_cuda:
             obs_in = obs_in.cuda()
             act_in = act_in.cuda()
             obs_next_in = obs_next_in.cuda()
             reward_in = reward_in.cuda()
-            reward_weights = reward_weights.cuda()
 
         reward, estimation, policy, delta = self((obs_in, act_in))
         _, e_next, _, delta_next = self((obs_next_in, policy))

@@ -6,7 +6,7 @@ def train(model_agent, train_set, test_set, epochs, print_epochs=1, loss_glider=
           max_steps=100, batch_size_train=128, batch_size_test=128, lr=.01,
           weights=torch.FloatTensor().new_tensor([1] * 5)):
 
-    print("losses: reward, estimation bce, estimation conti, delta, policy")
+    print("losses: reward, estimation bce, estimation conti, delta, policy(.6931)")
 
     if model_agent.is_cuda:
         weights = weights.cuda()

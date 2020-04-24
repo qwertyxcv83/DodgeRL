@@ -43,16 +43,16 @@ class WrapperPlay:
             run = self.user_input.run and total_time < max_time
 
             if self.pause:
-                self.game.obs = self.ui.update_pause(actor, self.game.obs, self.user_input)
+                self.ui.update_pause(actor, self.game, self.user_input)
             else:
                 action = actor.get_action(self.game.obs, self.user_input, True)
 
                 self.game.action_move(action, time_elapsed, speed)
                 self.game.action_triggered()
 
-            self.ui.draw(window, actor, font, self.game.obs)
+            self.ui.draw(window, actor, font, self.game)
             if self.pause:
-                self.ui.draw_pause(window, actor, font, self.game.obs)
+                self.ui.draw_pause(window, actor, font, self.game)
 
             pygame.display.update()
 
