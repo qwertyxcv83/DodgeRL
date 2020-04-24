@@ -10,7 +10,8 @@ class ModelAgent(torch.nn.Module):
         n_hidden = 100
         self.n_obs = n_obs
         self.n_reward = len(reward_weights)
-        self.reward_weights = reward_weights.cuda() if cuda else reward_weights
+        self.reward_weights = torch.FloatTensor().new_tensor(reward_weights).cuda() if cuda else \
+            torch.FloatTensor().new_tensor(reward_weights)
         self.n_act = n_act
         self.is_cuda = cuda
 
@@ -51,7 +52,7 @@ class ModelAgent(torch.nn.Module):
         loss_reward = functional.binary_cross_entropy(reward, reward_in)
         loss_estimation = ModelAgent.estimator_loss(estimation, e_next, reward_in)
         loss_delta = ModelAgent.delta_loss(estimation, e_next, delta)
-        loss_policy = ModelAgent.policy_loss(delta_next, reward_weights)
+        loss_policy = ModelAgent.policy_loss(delta_next, self.reward_weights)
 
         loss = torch.cat([loss_reward.flatten(),
                           loss_estimation[0].flatten(),
