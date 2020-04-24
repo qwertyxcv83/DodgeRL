@@ -53,9 +53,10 @@ class WrapperSample:
         reward = self.game.rewards()
 
         action = actor.get_action(self.game.obs, None, True)
+        
+        self.game.action_triggered()
 
         self.game.action_move(action, time_elapsed, speed)
-        self.game.action_triggered()
 
         # adding last time step to memory, and advancing game_stamp by 1
         obs_next = self.game.obs
