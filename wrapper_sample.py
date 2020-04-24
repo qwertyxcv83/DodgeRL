@@ -53,7 +53,7 @@ class WrapperSample:
         reward = self.game.rewards()
 
         action = actor.get_action(self.game.obs, None, True)
-        
+
         self.game.action_triggered()
 
         self.game.action_move(action, time_elapsed, speed)
