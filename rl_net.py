@@ -79,18 +79,19 @@ class ModelAgent(torch.nn.Module):
         return functional.mse_loss(delta, e_next - estimation, reduction='none').mean(dim=1)
 
     def policy_loss(self, policy, obs_in, reward_weights):
-        pc = policy.clone().requires_grad_()
+        with torch.enable_grad():
+            pc = policy.clone().requires_grad_()
 
-        _, _, _, delta_pol = self((obs_in, pc))
+            _, _, _, delta_pol = self((obs_in, pc))
 
-        ((-delta_pol * reward_weights).sum(dim=1) / reward_weights.sum()).mean().backward()
+            ((-delta_pol * reward_weights).sum(dim=1) / reward_weights.sum()).mean().backward()
 
-        grad = pc.grad
-        self.zero_grad()
+            grad = pc.grad
+            self.zero_grad()
 
-        loss = .5 * (policy - (pc - grad)) ** 2  # policy grad will be the same as pc grad
+            loss = .5 * (policy - (pc - grad)) ** 2  # policy grad will be the same as pc grad
 
-        return loss.mean(dim=1)
+            return loss.mean(dim=1)
 
     def reward_accuracy(self, data):
         with torch.no_grad():
