@@ -80,7 +80,7 @@ class ModelAgent(torch.nn.Module):
 
     def policy_loss(self, policy, obs_in, reward_weights):
         with torch.enable_grad():
-            pc = policy.clone().requires_grad_()
+            pc = policy.detach().requires_grad_()
 
             _, _, _, delta_pol = self((obs_in, pc))
 
