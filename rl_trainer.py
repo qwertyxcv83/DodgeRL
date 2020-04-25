@@ -6,7 +6,7 @@ def train(model_agent, train_set, test_set, epochs, print_epochs=1, loss_glider=
           max_steps=100, batch_size_train=128, batch_size_test=128, lr=.01,
           weights=torch.FloatTensor().new_tensor([1] * 5)):
 
-    print("losses: reward, estimation bce, estimation conti, delta, policy(.6931)")
+    print("losses: reward, estimation bce, estimation conti, delta, policy")
 
     if model_agent.is_cuda:
         weights = weights.cuda()
@@ -22,7 +22,8 @@ def train(model_agent, train_set, test_set, epochs, print_epochs=1, loss_glider=
 
         mean_loss = None
         for i, data in enumerate(test_loader):
-            mean_loss = (model_agent.loss(data).cpu() + mean_loss * i) / (i+1) if mean_loss is not None else model_agent.loss(data).cpu()
+            mean_loss = (model_agent.loss(data).mean(dim=0).cpu() + mean_loss * i) / (i+1)\
+                if mean_loss is not None else model_agent.loss(data).mean(dim=0).cpu()
     print("finished, loss: {}".format(mean_loss))
 
     des_loss = ((mean_loss * weights.cpu()).sum() + .01) * 2
@@ -63,7 +64,7 @@ def train_single(model, data, weights, opt=None, des_loss=float('inf'), zero_ste
                  max_steps=float('inf')):
     steps = 0
 
-    loss = model.loss(data)
+    loss = model.loss(data).mean(dim=0)
     first_loss = loss.cpu().detach()
     if not zero_step or (loss * weights).sum() > des_loss:
         opt.zero_grad()
@@ -72,7 +73,7 @@ def train_single(model, data, weights, opt=None, des_loss=float('inf'), zero_ste
         steps += 1
 
     while (loss * weights).sum() > des_loss and steps < max_steps:
-        loss = model.loss(data)
+        loss = model.loss(data).mean(dim=0)
         opt.zero_grad()
         (loss * weights).sum().backward()
         opt.step()
@@ -102,7 +103,8 @@ def evaluate(model, train_loader):
             sum_t1 += total_one
             sum_c0 += correct_zero
             sum_t0 += total_zero
-        mean_loss = (mean_loss * i + model.loss(data).cpu().detach()) / (i + 1) if mean_loss is not None else model.loss(data).cpu().detach()
+        mean_loss = (mean_loss * i + model.loss(data).mean(dim=0).cpu().detach()) / (i + 1)\
+            if mean_loss is not None else model.loss(data).mean(dim=0).cpu().detach()
     print()
     for i in range(sum_c1.shape[0]):
         print("total: {:.3f} %, ones: {:.3f} %, zeros: {:.3f} %, dataset_split: {:.3f} %".format(

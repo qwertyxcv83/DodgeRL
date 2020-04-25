@@ -5,7 +5,7 @@ import networks
 
 
 class ModelAgent(torch.nn.Module):
-    def __init__(self, n_obs, n_act, reward_weights, cuda, n_hidden=100):
+    def __init__(self, n_obs, n_act, reward_weights, cuda, n_hidden=200):
         super(ModelAgent, self).__init__()
         self.n_obs = n_obs
         self.n_reward = len(reward_weights)
@@ -37,8 +37,10 @@ class ModelAgent(torch.nn.Module):
 
         return reward, estimation, policy, delta
 
+    # returns shape batch_size * 5
     def loss(self, data):
         obs_in, act_in, obs_next_in, reward_in = data
+        batch_size = obs_in.shape[0]
         if self.is_cuda:
             obs_in = obs_in.cuda()
             act_in = act_in.cuda()
@@ -48,37 +50,37 @@ class ModelAgent(torch.nn.Module):
         reward, estimation, policy, delta = self((obs_in, act_in))
         _, e_next, _, delta_next = self((obs_next_in, policy))
 
-        loss_reward = functional.binary_cross_entropy(reward, reward_in)
+        loss_reward = functional.binary_cross_entropy(reward, reward_in, reduction='none').mean(dim=1)
         loss_estimation = ModelAgent.estimator_loss(estimation, e_next, reward_in)
         loss_delta = ModelAgent.delta_loss(estimation, e_next, delta)
         loss_policy = ModelAgent.policy_loss(delta_next, self.reward_weights)
 
-        loss = torch.cat([loss_reward.flatten(),
-                          loss_estimation[0].flatten(),
-                          loss_estimation[1].flatten(),
-                          loss_delta.flatten(),
-                          loss_policy.flatten()],
-                         dim=0)
+        loss = torch.cat([loss_reward.reshape(batch_size, 1),
+                          loss_estimation[0].reshape(batch_size, 1),
+                          loss_estimation[1].reshape(batch_size, 1),
+                          loss_delta.reshape(batch_size, 1),
+                          loss_policy.reshape(batch_size, 1)],
+                         dim=1)
 
         return loss
 
     @staticmethod
     def estimator_loss(estimation, e_next, reward_in):
 
-        loss_bce = functional.binary_cross_entropy(estimation, reward_in)
+        loss_bce = functional.binary_cross_entropy(estimation, reward_in, reduction='none').mean(dim=1)
 
         # difference to next estimation -> function should be continuous
-        loss_difference = (estimation - e_next).mean() ** 2
+        loss_difference = (estimation - e_next).mean(dim=1) ** 2
 
         return loss_bce, loss_difference
 
     @staticmethod
     def delta_loss(estimation, e_next, delta):
-        return functional.mse_loss(delta, e_next - estimation)
+        return functional.mse_loss(delta, e_next - estimation, reduction='none').mean(dim=1)
 
     @staticmethod
     def policy_loss(delta_next, reward_weights):
-        return functional.softplus(-(delta_next * reward_weights).mean())
+        return -((delta_next * reward_weights).sum(dim=1) / reward_weights.sum()) + 1
 
     def reward_accuracy(self, data):
         with torch.no_grad():

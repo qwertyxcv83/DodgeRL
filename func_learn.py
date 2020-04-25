@@ -1,5 +1,6 @@
 import torch
 from torch.utils.data.dataset import random_split
+from torch.utils.data import DataLoader
 
 import game_parallel
 import wrapper_sample
@@ -19,6 +20,29 @@ def load_data(split, filename="./data.csv", max_size=float('inf'), console=True)
         print("loaded dataset with {} elements".format(len_return))
 
     return return_set
+
+
+# data_set class should be torch.utils.data.dataset.SubSet
+def reduce_dataset(model_agent, data_set, x, filename="./data.csv", batch_size=1024,
+                   weights=torch.FloatTensor().new_tensor([1] * 5)):
+    if model_agent.is_cuda:
+        weights = weights.cuda()
+    data_loader = DataLoader(dataset=data_set, batch_size=batch_size, shuffle=False, drop_last=False)
+    losses = torch.FloatTensor().new_zeros(len(data_set))
+    with torch.no_grad():
+        model_agent.eval()
+        pos = 0
+        for data in data_loader:
+            loss = (model_agent.loss(data) * weights).sum(dim=1).cpu()
+            size = loss.shape[0]
+            losses[pos:pos+size] = loss
+            pos += size
+    print("losses calculated, mean: {:.4f}".format(losses.mean()), end="")
+    top = torch.topk(losses, int(x * len(data_set)))
+    print(", top {}% loss mean: {:.4f}".format(x * 100, top[0].mean()))
+    indices = torch.Tensor().new_tensor(data_set.indices)[top[1], ]
+    wrapper_sample.CustomDataset.from_tuple(data_set.dataset[indices.long(), ]).to_csv(filename, overwrite=True)
+    print("done, saved at {}".format(filename))
 
 
 def sample_game(actor, time_sec, n_parallel, game_class, overwrite=True, console=True, filename="./data.csv"):
@@ -45,12 +69,11 @@ def create_data(actor, split, secs=30, times=1, n_parallel=1, max_size=float('in
             print("{:.0f} % ... ".format(float(i) / (times-1) * 100), end='')
 
     if console:
-        print(" sampling done")
+        print("sampling done")
 
     data_set = load_data(split, max_size=max_size, console=console, filename=filename)
-    rewards = data_set.dataset.reward.sum(dim=0)
 
-    return data_set, rewards
+    return data_set
 
 
 def load(agent, path='./agent.pth', device='cpu'):

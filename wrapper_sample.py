@@ -96,7 +96,7 @@ class CustomDataset(Dataset):
     def __len__(self):
         return self.obs.shape[0]
 
-    def to_csv(self, filename="./data.csv", overwrite=False):
+    def to_csv(self, filename, overwrite=False):
         data = torch.cat([self.obs, self.action, self.obs_next, self.reward], dim=1).numpy()
 
         data_frame = pandas.DataFrame(data=data, index=None, columns=None)
@@ -104,7 +104,7 @@ class CustomDataset(Dataset):
         data_frame.to_csv(filename, mode='w' if overwrite else 'a', index=None, header=False)
 
     @classmethod
-    def from_csv(cls, split, filename="./data.csv"):
+    def from_csv(cls, split, filename):
         n_obs, n_act, n_obs_next, n_rew = split
         data_frame = pandas.read_csv(filename, header=None)
 
@@ -121,3 +121,8 @@ class CustomDataset(Dataset):
                                              n_obs + n_act + n_obs_next + n_rew].values)
 
         return cls(obs, act, onx, rew)
+
+    @classmethod
+    def from_tuple(cls, tpl):
+        obs, action, obs_next, reward = tpl
+        return cls(obs, action, obs_next, reward)
