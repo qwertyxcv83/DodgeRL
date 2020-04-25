@@ -48,12 +48,12 @@ class ModelAgent(torch.nn.Module):
             reward_in = reward_in.cuda()
 
         reward, estimation, policy, delta = self((obs_in, act_in))
-        _, e_next, _, delta_next = self((obs_next_in, policy))
+        _, e_next, _, _ = self((obs_next_in, None))
 
         loss_reward = functional.binary_cross_entropy(reward, reward_in, reduction='none').mean(dim=1)
         loss_estimation = ModelAgent.estimator_loss(estimation, e_next, reward_in)
         loss_delta = ModelAgent.delta_loss(estimation, e_next, delta)
-        loss_policy = ModelAgent.policy_loss(delta_next, self.reward_weights)
+        loss_policy = self.policy_loss(policy, obs_in, self.reward_weights)
 
         loss = torch.cat([loss_reward.reshape(batch_size, 1),
                           loss_estimation[0].reshape(batch_size, 1),
@@ -70,7 +70,7 @@ class ModelAgent(torch.nn.Module):
         loss_bce = functional.binary_cross_entropy(estimation, reward_in, reduction='none').mean(dim=1)
 
         # difference to next estimation -> function should be continuous
-        loss_difference = (estimation - e_next).mean(dim=1) ** 2
+        loss_difference = ((estimation - e_next) ** 2).mean(dim=1)
 
         return loss_bce, loss_difference
 
@@ -78,9 +78,19 @@ class ModelAgent(torch.nn.Module):
     def delta_loss(estimation, e_next, delta):
         return functional.mse_loss(delta, e_next - estimation, reduction='none').mean(dim=1)
 
-    @staticmethod
-    def policy_loss(delta_next, reward_weights):
-        return -((delta_next * reward_weights).sum(dim=1) / reward_weights.sum()) + 1
+    def policy_loss(self, policy, obs_in, reward_weights):
+        pc = policy.clone().requires_grad_()
+
+        _, _, _, delta_pol = self((obs_in, pc))
+
+        ((-delta_pol * reward_weights).sum(dim=1) / reward_weights.sum()).mean().backward()
+
+        grad = pc.grad
+        self.zero_grad()
+
+        loss = .5 * (policy - (pc - grad)) ** 2  # policy grad will be the same as pc grad
+
+        return loss.mean(dim=1)
 
     def reward_accuracy(self, data):
         with torch.no_grad():
