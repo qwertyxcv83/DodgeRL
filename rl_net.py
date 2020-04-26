@@ -91,7 +91,7 @@ class ModelAgent(torch.nn.Module):
 
             _, _, _, delta_pol = self((obs_in, pc))
 
-            ((-delta_pol * reward_weights).sum(dim=1) / reward_weights.sum()).mean().backward()
+            ((-delta_pol * reward_weights).sum(dim=1)).mean().backward()
 
             grad = pc.grad
             self.zero_grad()
