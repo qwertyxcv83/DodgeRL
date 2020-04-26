@@ -48,7 +48,7 @@ class ModelAgent(torch.nn.Module):
             reward_in = reward_in.cuda()
 
         reward, estimation, policy, delta = self((obs_in, act_in))
-        _, e_next, _, _ = self((obs_next_in, None))
+        _, e_next, _, _ = self((obs_next_in, act_in))
 
         loss_reward = functional.binary_cross_entropy(reward, reward_in, reduction='none').mean(dim=1)
         loss_estimation = ModelAgent.estimator_loss(estimation, e_next, reward_in)
