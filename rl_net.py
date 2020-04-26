@@ -70,7 +70,9 @@ class ModelAgent(torch.nn.Module):
         loss_bce = functional.binary_cross_entropy(estimation, reward_in, reduction='none').mean(dim=1)
 
         # difference to next estimation -> function should be continuous
-        loss_difference = ((estimation - e_next) ** 2).mean(dim=1)
+        diff = (e_next - estimation) * (1 - reward_in)
+        mean = diff.mean(dim=0).detach()
+        loss_difference = ((diff - mean) ** 2).mean(dim=1)
 
         return loss_bce, loss_difference
 
