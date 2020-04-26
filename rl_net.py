@@ -81,7 +81,7 @@ class ModelAgent(torch.nn.Module):
         # batch statistics
         delta_real = (e_next - estimation).detach()
         mean = delta_real.mean(dim=0)
-        std = ((delta_real - mean) ** 2).mean(dim=0).sqrt()
+        std = ((delta_real - mean) ** 2).mean(dim=0).sqrt().clamp(1e-5)
 
         delta_real_normal = (delta_real - mean) / std
 
