@@ -76,7 +76,14 @@ class ModelAgent(torch.nn.Module):
 
     @staticmethod
     def delta_loss(estimation, e_next, delta):
-        return functional.mse_loss(delta, e_next - estimation, reduction='none').mean(dim=1)
+        # batch statistics
+        delta_real = (e_next - estimation).detach()
+        mean = delta_real.mean(dim=0)
+        std = ((delta_real - mean) ** 2).mean(dim=0).sqrt()
+
+        delta_real_normal = (delta_real - mean) / std
+
+        return functional.mse_loss(delta, delta_real_normal, reduction='none').mean(dim=1)
 
     def policy_loss(self, policy, obs_in, reward_weights):
         with torch.enable_grad():
