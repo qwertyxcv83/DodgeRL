@@ -77,7 +77,7 @@ class DodgeUI(GameUI):
 
         if actor.is_agent:
             with torch.no_grad():
-                r, e, _, _ = actor.agent((obs, None))
+                r, e, _, _ = actor.agent((game.obs, None))
                 r = r.cpu()
                 e = e.cpu()
             for i in range(r.shape[1]):
