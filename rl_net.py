@@ -76,6 +76,7 @@ class ModelAgent(torch.nn.Module):
         if loss_difference.sum() == 0:
             print(reward_in.sum(dim=0))
             print(mean)
+            print((e_next - estimation).abs().sum(dim=1))
 
         return loss_bce, loss_difference
 
