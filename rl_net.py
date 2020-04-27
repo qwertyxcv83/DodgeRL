@@ -51,7 +51,7 @@ class ModelAgent(torch.nn.Module):
         _, e_next, _, _ = self((obs_next_in, act_in))
 
         loss_reward = functional.binary_cross_entropy(reward, reward_in, reduction='none').mean(dim=1)
-        loss_estimation = ModelAgent.estimator_loss(estimation, e_next, reward_in, obs_in, obs_next_in)
+        loss_estimation = ModelAgent.estimator_loss(estimation, e_next, reward_in)
         loss_delta = ModelAgent.delta_loss(estimation, e_next, delta)
         loss_policy = self.policy_loss(policy, obs_in, self.reward_weights)
 
@@ -65,7 +65,7 @@ class ModelAgent(torch.nn.Module):
         return loss
 
     @staticmethod
-    def estimator_loss(estimation, e_next, reward_in, obs_in, obs_next_in):
+    def estimator_loss(estimation, e_next, reward_in):
 
         loss_bce = functional.binary_cross_entropy(estimation, reward_in, reduction='none').mean(dim=1)
 
@@ -73,11 +73,6 @@ class ModelAgent(torch.nn.Module):
         diff = (e_next - estimation) * (1 - reward_in)
         mean = diff.mean(dim=0).detach()
         loss_difference = ((diff - mean) ** 2).mean(dim=1)
-        if loss_difference.sum() == 0:
-            print(reward_in.sum(dim=0))
-            print(mean)
-            print((e_next - estimation).abs().sum(dim=0))
-            print((obs_next_in - obs_in).abs().sum(dim=0))
 
         return loss_bce, loss_difference
 
