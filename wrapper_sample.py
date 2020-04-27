@@ -49,7 +49,7 @@ class WrapperSample:
 
     def update(self, time_elapsed, speed, actor):
 
-        obs = self.game.obs
+        obs = self.game.obs.clone()
         reward = self.game.rewards()
 
         action = actor.get_action(self.game.obs, None, True)
