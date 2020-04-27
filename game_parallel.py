@@ -98,7 +98,9 @@ class DodgeParallel(GameParallel):
 
         obstacle = (right | left | down | up).reshape(self.obs_size[0], 1)
 
-        return torch.cat([obstacle, present], dim=1)
+        border = (self.obs[:, 0:2].abs() >= 1).any(dim=1).reshape(self.obs_size[0], 1)
+
+        return torch.cat([obstacle, present, border], dim=1)
 
 
 class PresentHunterParallel(GameParallel):
