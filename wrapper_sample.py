@@ -13,7 +13,10 @@ class WrapperSample:
 
         self.millis_per_tick = millis_per_tick
 
+        # for statistics of how many rewards were gatherd
         self.game_stamp = 0
+        self.reward_sum = 0
+
         self.overwrite = False
 
         self.memory = None
@@ -28,6 +31,7 @@ class WrapperSample:
             self.memory.clear()
 
         self.game_stamp = 0  # time running, +1 every nn-tick
+        self.reward_sum = 0
 
         self.game.obs = self.game.initial_obs()
 
@@ -45,7 +49,8 @@ class WrapperSample:
             self.update(time_elapsed, speed, actor)
 
         if console:
-            print(" finalized")
+            print(" finalized\naverage rewards/tick/parallel: {}"
+                  .format(self.reward_sum / self.game_stamp / self.game.obs_size[0]))
 
     def update(self, time_elapsed, speed, actor):
 
@@ -63,7 +68,10 @@ class WrapperSample:
 
         # writing state of the game to temporary csv
         self.memory.append((obs, action, obs_next, reward))
+
+        # for statistics
         self.game_stamp += 1
+        self.reward_sum = self.reward_sum + reward.sum(dim=0)
 
 
 class MemoryCSV:
