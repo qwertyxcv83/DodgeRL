@@ -50,7 +50,7 @@ class WrapperSample:
 
         if console:
             print(" finalized\naverage rewards/tick/parallel: {}"
-                  .format(self.reward_sum / self.game_stamp / self.game.obs_size[0]))
+                  .format(self.reward_sum.float() / self.game_stamp / self.game.obs_size[0]))
 
     def update(self, time_elapsed, speed, actor):
 
