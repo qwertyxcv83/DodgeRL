@@ -28,6 +28,26 @@ class ActorNN(Actor):
         return self.act
 
 
+class ActorEps(Actor):
+    def __init__(self, agent, epsilon=.5, max_speed=1.5):
+        super().__init__(True)
+        self.agent = agent
+        self.epsilon = epsilon
+        self.max_speed = max_speed
+        self.act = torch.FloatTensor().new_zeros((1, agent.n_act))
+
+    def get_action(self, obs, user_input, nn_step):
+        if nn_step:
+            with torch.no_grad():
+                act = self.agent((obs, None))[2].cpu()\
+                    if torch.rand(1) < self.epsilon else\
+                    torch.randn(obs.shape[0], self.agent.n_act)
+
+                self.act = act * self.max_speed
+
+        return self.act
+
+
 class ActorRandom(Actor):
     def __init__(self, n_act, noise=.5, max_speed=1.5):
         super().__init__(False)
